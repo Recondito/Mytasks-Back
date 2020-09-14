@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Core.Entities
 {
-    public class User : IdentityUser
+    public class AppUser : IdentityUser
     {
     }
 }

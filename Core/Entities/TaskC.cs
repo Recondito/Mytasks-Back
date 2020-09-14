@@ -18,6 +18,6 @@ namespace Core.Entities
         public int Priority { get; set; }
         public int State { get; set; }
         public bool Visible { get; set; }
-        public int EllapsedTime { get; set; }
+        public int ElapsedTime { get; set; }
     }
 }

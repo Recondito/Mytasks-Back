@@ -12,81 +12,81 @@ namespace Infrastructure.Data
         public DbSet<SubTask> SubTasks { get; set; }
         public DbSet<Tag> Tags { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder builder)
         {
             //************
             //Tasks configuration
             //************
-            modelBuilder.Entity<TaskC>()
+            builder.Entity<TaskC>()
                 .HasKey(t => t.Id);
 
-            modelBuilder.Entity<TaskC>().Property(t => t.UserId)
+            builder.Entity<TaskC>().Property(t => t.UserId)
                 .IsRequired();
 
-            modelBuilder.Entity<TaskC>().Property(t => t.Name)
+            builder.Entity<TaskC>().Property(t => t.Name)
                 .IsRequired().HasMaxLength(100);
 
-            modelBuilder.Entity<TaskC>().Property(t => t.Description)
+            builder.Entity<TaskC>().Property(t => t.Description)
                 .IsRequired()
                 .HasMaxLength(200);
 
-            modelBuilder.Entity<TaskC>().Property(t => t.StartDate)
+            builder.Entity<TaskC>().Property(t => t.StartDate)
                 .IsRequired();
 
-            modelBuilder.Entity<TaskC>().Property(t => t.DueDate)
+            builder.Entity<TaskC>().Property(t => t.DueDate)
                 .IsRequired();
 
-            modelBuilder.Entity<TaskC>().Property(t => t.Priority)
+            builder.Entity<TaskC>().Property(t => t.Priority)
                 .IsRequired();
 
-            modelBuilder.Entity<TaskC>().Property(t => t.State)
+            builder.Entity<TaskC>().Property(t => t.State)
                 .IsRequired()
                 .HasDefaultValue(0);
 
-            modelBuilder.Entity<TaskC>().Property(t => t.Visible)
+            builder.Entity<TaskC>().Property(t => t.Visible)
                 .IsRequired()
                 .HasDefaultValue(true);
 
-            modelBuilder.Entity<TaskC>().Property(t => t.EllapsedTime)
+            builder.Entity<TaskC>().Property(t => t.ElapsedTime)
                 .IsRequired()
                 .HasDefaultValue(0);
 
             //************
             //SubTasks configuration
             //************
-            modelBuilder.Entity<SubTask>()
+            builder.Entity<SubTask>()
                 .HasKey(s => s.Id);
 
-            modelBuilder.Entity<SubTask>().Property(s => s.TaskId)
+            builder.Entity<SubTask>().Property(s => s.TaskId)
                 .IsRequired();
 
-            modelBuilder.Entity<SubTask>()
+            builder.Entity<SubTask>()
                 .HasOne(s => s.Task)
                 .WithMany(t => t.SubTasks)
                 .HasForeignKey(s => s.TaskId);
 
-            modelBuilder.Entity<SubTask>().Property(s => s.Name)
+            builder.Entity<SubTask>().Property(s => s.Name)
                 .IsRequired()
                 .HasMaxLength(100);
 
-            modelBuilder.Entity<SubTask>().Property(s => s.Priority)
+            builder.Entity<SubTask>().Property(s => s.Priority)
                 .IsRequired();
 
-            modelBuilder.Entity<SubTask>().Property(s => s.State)
+            builder.Entity<SubTask>().Property(s => s.State)
                 .IsRequired()
                 .HasDefaultValue(0);
 
             //************
             //Tags configuration
             //************
-            modelBuilder.Entity<Tag>()
+            builder.Entity<Tag>()
                 .HasKey(t => t.Id);
 
-            modelBuilder.Entity<TaskC>()
+            builder.Entity<TaskC>()
                 .Property(t => t.Name)
                 .IsRequired().HasMaxLength(100);
 
-            modelBuilder.Entity<TaskC>()
+            builder.Entity<TaskC>()
                 .Property(t => t.Description)
                 .IsRequired()
                 .HasMaxLength(200);
@@ -94,12 +94,12 @@ namespace Infrastructure.Data
             //************
             //TaskTags configuration
             //************
-            modelBuilder.Entity<TaskTag>()
+            builder.Entity<TaskTag>()
                 .HasOne(TsTg => TsTg.Tag)
                 .WithMany(Ts => Ts.TaskTags)
                 .HasForeignKey(TsTg => TsTg.TagId);
 
-            modelBuilder.Entity<TaskTag>()
+            builder.Entity<TaskTag>()
                 .HasOne(TsTg => TsTg.Task)
                 .WithMany(Tg => Tg.TaskTags)
                 .HasForeignKey(TsTg => TsTg.TaskId);
