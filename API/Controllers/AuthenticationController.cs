@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using API.DTOs;
 using Core.Entities;
 using Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -45,10 +46,74 @@ namespace API.Controllers
 
             if(!result.Succeeded) return Unauthorized();
 
-            //token generation
+            var tokenString = await GetToken(user);
+
+            return Ok(new UserDto() { Email = user.Email, UserName = user.UserName, Token = tokenString });
+        }
+
+        [HttpPost("register")]
+        public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
+        {
+            if(CheckUserNameExists(registerDto.Username).Result.Value)
+            {
+                return StatusCode(StatusCodes.Status409Conflict, new Response { Status = "Conflict", Message = "User already exists" });
+            }
+
+            var user = new AppUser()
+            {
+                UserName = registerDto.Username,
+                Email = registerDto.Email
+            };
+
+            var result = await userManager.CreateAsync(user, registerDto.Password);
+            if (!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to create user" });
+
+            var roleAddResult = await userManager.AddToRoleAsync(user, "NormalUser");
+
+            if (!roleAddResult.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to add user role" });
+
+            user = await userManager.FindByNameAsync(registerDto.Username); //Updates user to include the userId in the token
+
+            if (user == null) return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Failed to find created user" });
+
+            var tokenString = await GetToken(user);
+
+            return Ok(new UserDto() { Email = user.Email, UserName = user.UserName, Token = tokenString });
+
+        }
+
+        [HttpGet("userexists")]
+        public async Task<ActionResult<bool>> CheckUserNameExists([FromQuery] string username)
+        {
+            return await userManager.FindByNameAsync(username) != null;            
+        }
+
+        [Authorize]
+        [HttpPut("changepassword")]
+        public async Task<ActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
+        {
+            var userId = HttpContext.User?.Claims?.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+            
+            if (userId == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
+
+            var user = await userManager.FindByIdAsync(userId);
+
+            if(user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            var result = await userManager.ChangePasswordAsync(user, changePasswordDto.currentPassword, changePasswordDto.newPassword);
+
+            if(!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to change password" });
+
+            return Ok(new Response() { Status = "Success", Message = "Password was changed successfully" });
+        }
+
+
+        private async Task<string> GetToken(AppUser user)
+        {
             var claims = new List<Claim>()
             {
                 new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id)
             };
             var roles = await userManager.GetRolesAsync(user);
 
@@ -64,9 +129,7 @@ namespace API.Controllers
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
             );
 
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-            return Ok(new UserDto() { Email = user.Email, UserName = loginDto.Username, Token = tokenString });
+            return  new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
