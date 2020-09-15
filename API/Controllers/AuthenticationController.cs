@@ -5,6 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 using API.DTOs;
 using Core.Entities;
 using Infrastructure.Data;
@@ -21,17 +22,20 @@ namespace API.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        private readonly AppIdentityContext identityContext;
         private readonly UserManager<AppUser> userManager;
+        private readonly RoleManager<IdentityRole> roleManager;
         private readonly SignInManager<AppUser> signInManager;
         private readonly IConfiguration config;
+        private readonly AppIdentityContext appIdentityContext;
         private readonly SymmetricSecurityKey key;
 
-        public AuthenticationController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, IConfiguration config)
+        public AuthenticationController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, SignInManager<AppUser> signInManager, IConfiguration config, AppIdentityContext appIdentityContext)
         {
             this.userManager = userManager;
+            this.roleManager = roleManager;
             this.signInManager = signInManager;
             this.config = config;
+            this.appIdentityContext = appIdentityContext;
             this.key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JWT:Key"]));
         }
 
@@ -54,37 +58,62 @@ namespace API.Controllers
         [HttpPost("register")]
         public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
         {
-            if(CheckUserNameExists(registerDto.Username).Result.Value)
+            using (var transaction = await appIdentityContext.Database.BeginTransactionAsync())
             {
-                return StatusCode(StatusCodes.Status409Conflict, new Response { Status = "Conflict", Message = "User already exists" });
+                try
+                {
+                    if (CheckUserNameExists(registerDto.Username).Result.Value)
+                    {
+                        return StatusCode(StatusCodes.Status409Conflict, new Response { Status = "Conflict", Message = "User already exists" });
+                    }
+
+                    var user = new AppUser()
+                    {
+                        UserName = registerDto.Username,
+                        Email = registerDto.Email
+                    };
+
+                    var result = await userManager.CreateAsync(user, registerDto.Password);
+                    if (!result.Succeeded)
+                    {
+                        return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to create user" });
+                    }
+
+                    var userRole = "NormalUser";
+
+                    if (!await roleManager.RoleExistsAsync(userRole))
+                    {
+                        await roleManager.CreateAsync(new IdentityRole(userRole));
+                    }
+
+                    var roleAddResult = await userManager.AddToRoleAsync(user, userRole);
+
+                    if (!roleAddResult.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to add user role" });
+
+                    user = await userManager.FindByNameAsync(registerDto.Username); //Updates user to include the userId in the token
+
+                    if (user == null) return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Failed to find created user" });
+
+                    var tokenString = await GetToken(user);
+
+                    await transaction.CommitAsync();
+
+                    return Ok(new UserDto() { Email = user.Email, UserName = user.UserName, Token = tokenString });
+                }
+                catch
+                {
+                    return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Failed to complete transaction" });
+                }
+                
             }
-
-            var user = new AppUser()
-            {
-                UserName = registerDto.Username,
-                Email = registerDto.Email
-            };
-
-            var result = await userManager.CreateAsync(user, registerDto.Password);
-            if (!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to create user" });
-
-            var roleAddResult = await userManager.AddToRoleAsync(user, "NormalUser");
-
-            if (!roleAddResult.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to add user role" });
-
-            user = await userManager.FindByNameAsync(registerDto.Username); //Updates user to include the userId in the token
-
-            if (user == null) return StatusCode(StatusCodes.Status500InternalServerError, new Response { Status = "Error", Message = "Failed to find created user" });
-
-            var tokenString = await GetToken(user);
-
-            return Ok(new UserDto() { Email = user.Email, UserName = user.UserName, Token = tokenString });
-
+                       
         }
 
         [HttpGet("userexists")]
         public async Task<ActionResult<bool>> CheckUserNameExists([FromQuery] string username)
         {
+            if(string.IsNullOrEmpty(username)) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Null or empty username" });
+
             return await userManager.FindByNameAsync(username) != null;            
         }
 
@@ -92,7 +121,7 @@ namespace API.Controllers
         [HttpPut("changepassword")]
         public async Task<ActionResult> ChangePassword(ChangePasswordDto changePasswordDto)
         {
-            var userId = HttpContext.User?.Claims?.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value;
+            var userId = HttpContext.User?.Claims?.FirstOrDefault(c => c.Type == "userid")?.Value;
             
             if (userId == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
 
@@ -112,8 +141,8 @@ namespace API.Controllers
         {
             var claims = new List<Claim>()
             {
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id)
+                new Claim(ClaimTypes.Name, user.UserName),
+                new Claim("userid", user.Id)
             };
             var roles = await userManager.GetRolesAsync(user);
 

@@ -35,13 +35,18 @@ namespace API
         {
             services.AddControllers();
 
-            services.AddDbContext<TasksContext>(options => options.UseSqlite(config.GetConnectionString("DefautConnection")));
+            //services.AddDbContext<TasksContext>(options => options.UseSqlite(config.GetConnectionString("DefaultConnection")));
 
             services.AddDbContext<AppIdentityContext>(options => options.UseSqlite(config.GetConnectionString("IdentityConnection")));
 
             services.AddIdentity<AppUser,IdentityRole>().AddEntityFrameworkStores<AppIdentityContext>().AddDefaultTokenProviders();
 
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
                 .AddJwtBearer(options => 
                 {
                     options.TokenValidationParameters = new TokenValidationParameters()

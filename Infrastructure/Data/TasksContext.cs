@@ -8,6 +8,10 @@ namespace Infrastructure.Data
 {
     public class TasksContext : DbContext
     {
+        public TasksContext(DbContextOptions<TasksContext> options) : base(options)
+        {
+        }
+
         public DbSet<TaskC> Tasks { get; set; }
         public DbSet<SubTask> SubTasks { get; set; }
         public DbSet<Tag> Tags { get; set; }

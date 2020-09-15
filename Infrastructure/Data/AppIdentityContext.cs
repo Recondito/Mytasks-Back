@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Core.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Text;
 
 namespace Infrastructure.Data
 {
-    public class AppIdentityContext : IdentityDbContext
+    public class AppIdentityContext : IdentityDbContext<AppUser>
     {
         public AppIdentityContext(DbContextOptions<AppIdentityContext> options) : base(options)
         {
