@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using AutoMapper;
 using Core.Entities;
 using Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -35,11 +36,13 @@ namespace API
         {
             services.AddControllers();
 
-            //services.AddDbContext<TasksContext>(options => options.UseSqlite(config.GetConnectionString("DefaultConnection")));
+            services.AddDbContext<TasksContext>(options => options.UseSqlite(config.GetConnectionString("DefaultConnection")));
 
             services.AddDbContext<AppIdentityContext>(options => options.UseSqlite(config.GetConnectionString("IdentityConnection")));
 
             services.AddIdentity<AppUser,IdentityRole>().AddEntityFrameworkStores<AppIdentityContext>().AddDefaultTokenProviders();
+
+            services.AddAutoMapper(typeof(MappingProfiles));
 
             services.AddAuthentication(options =>
             {

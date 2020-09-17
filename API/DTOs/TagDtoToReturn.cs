@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace Core.Entities
+namespace API.DTOs
 {
-    public class Tag
+    public class TagDtoToReturn
     {
         public int Id { get; set; }
-        public string UserId { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public List<TaskTag> TaskTags { get; set; }
     }
 }

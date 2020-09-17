@@ -86,11 +86,11 @@ namespace Infrastructure.Data
             builder.Entity<Tag>()
                 .HasKey(t => t.Id);
 
-            builder.Entity<TaskC>()
+            builder.Entity<Tag>()
                 .Property(t => t.Name)
                 .IsRequired().HasMaxLength(100);
 
-            builder.Entity<TaskC>()
+            builder.Entity<Tag>()
                 .Property(t => t.Description)
                 .IsRequired()
                 .HasMaxLength(200);

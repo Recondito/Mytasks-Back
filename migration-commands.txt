@@ -1,0 +1,9 @@
+dotnet ef migrations add InitialCreate -p .\Infrastructure\ -s .\API\ -c TasksContext -o .\Data\TasksMigrations
+
+dotnet ef migrations remove -p .\Infrastructure\ -s .\API\ -c TasksContext
+
+
+dotnet ef migrations add InitialCreate -p .\Infrastructure\ -s .\API\ -c AppIdentityContext -o .\Data\IdentityMigrations
+
+dotnet ef migrations remove -p .\Infrastructure\ -s .\API\ -c AppIdentityContext
+

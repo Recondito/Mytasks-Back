@@ -1,15 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace Core.Entities
+namespace API.DTOs
 {
-    public class SubTask
+    public class SubTaskDtoToReturn
     {
         public int Id { get; set; }
-        public string UserId { get; set; }
-        public int TaskId { get; set; }
-        public TaskC Task { get; set; }
         public string Name { get; set; }
         public int Priority { get; set; }
         public int State { get; set; }
