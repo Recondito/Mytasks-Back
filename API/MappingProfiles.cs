@@ -23,6 +23,18 @@ namespace API
             CreateMap<Tag, TagDtoToReturn>();
 
             CreateMap<TagDtoForCreate, Tag>();
+
+            CreateMap<TagDtoToReturn, Tag>()
+                .ForMember(t => t.Id, o => o.Ignore()); ;
+
+            CreateMap<TaskDtoToUpdate, TaskC>()
+                .ForMember(t => t.TaskTags, o => o.Ignore())
+                .ForMember(t => t.SubTasks, o => o.Ignore());
+
+            CreateMap<SubTaskDtoToReturn, SubTask>()
+                .ForMember(s => s.Id, o => o.Ignore());
+
+            CreateMap<SubTaskDtoToReturn, SubTaskDtoForCreate>();
         }
     }
 }
