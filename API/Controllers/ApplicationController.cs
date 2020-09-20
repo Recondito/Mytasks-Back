@@ -34,7 +34,7 @@ namespace API.Controllers
 
             if (string.IsNullOrEmpty(userId)) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
 
-            List<TaskC> tasks = await context.Tasks.Where(t => t.UserId == userId).ToListAsync();
+            List<TaskC> tasks = await context.Tasks.Include("TaskTags.Tag").Include(t => t.SubTasks).Where(t => t.UserId == userId).ToListAsync();
             if(tasks == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to get tasks" });
 
             return mapper.Map<List<TaskDtoToReturn>>(tasks);
@@ -66,7 +66,7 @@ namespace API.Controllers
             task.UserId = userId;
 
             
-            var taskTags = new List<TaskTag>();
+            task.TaskTags = new List<TaskTag>();
 
             foreach (var tagId in taskDto.TagIds)
             {
@@ -129,7 +129,7 @@ namespace API.Controllers
 
             if (string.IsNullOrEmpty(userId)) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
 
-            var task = await context.Tasks.FindAsync(taskDto.Id);
+            var task = await context.Tasks.Include("TaskTags.Tag").Include(t => t.SubTasks).SingleOrDefaultAsync(t => t.Id == taskDto.Id);
             if (task == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find task" });
             if (task.UserId != userId) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unathorized task id" });
 
@@ -181,7 +181,7 @@ namespace API.Controllers
 
             foreach (var tagDto in taskDto.Tags)
             {
-                var subtask = task.TaskTags.Find(s => s.Id == tagDto.Id); //compare subtasks from DTO with subtasks from DB
+                var subtask = task.TaskTags.Find(s => s.TagId == tagDto.Id); //compare subtasks from DTO with subtasks from DB
 
                 if (subtask == null) //if the substask id is a match, update the properties
                 {
@@ -201,7 +201,7 @@ namespace API.Controllers
             }
 
 
-            if (await context.SaveChangesAsync() == 0) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to update tag" });
+            if (await context.SaveChangesAsync() == 0) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to update task" });
 
             return mapper.Map<TaskDtoToReturn>(task);
         }

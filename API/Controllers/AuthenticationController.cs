@@ -153,7 +153,8 @@ namespace API.Controllers
 
             var token = new JwtSecurityToken(
                 issuer: config["JWT:Issuer"],
-                expires: DateTime.Now.AddHours(3),
+                //expires: DateTime.Now.AddHours(3),
+                expires: DateTime.Now.AddYears(1),
                 claims: claims,
                 signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
             );

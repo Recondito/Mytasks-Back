@@ -1,0 +1,9 @@
+{
+    "username" : "juanpablo",
+    "password" : "aQ1ttydfge%"
+} 
+
+
+"email": "juanpablo@intec.com",
+    "userName": "juanpablo",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1lIjoianVhbnBhYmxvIiwidXNlcmlkIjoiMzllYzkwZmEtNWYxMC00MGQ1LWJjNzQtMzE2Nzc3ODQwNjQwIiwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiTm9ybWFsVXNlciIsImV4cCI6MTYzMjE1MDU3NCwiaXNzIjoiaHR0cHM6Ly9sb2NhbGhvc3Q6NTAwMSJ9.-2kFe7Q2XS_OeKS_FY_8az2oXea2XC5mNMUTg1bYsmU"

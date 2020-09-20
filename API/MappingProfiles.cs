@@ -16,7 +16,8 @@ namespace API
             
             CreateMap<SubTaskDtoForCreate, SubTask>();
 
-            CreateMap<TaskC, TaskDtoToReturn>();
+            CreateMap<TaskC, TaskDtoToReturn>()
+                .ForMember(t => t.Tags, o => o.MapFrom(s => s.TaskTags.Select(t => t.Tag).ToList()));
 
             CreateMap<SubTask, SubTaskDtoToReturn>();
 
