@@ -5,11 +5,9 @@ using System.Threading.Tasks;
 
 namespace API.DTOs
 {
-    public class UserDto
+    public class UserEmailDto
     {
         public string Email { get; set; }
-        public string UserName { get; set; }
-        public string Token { get; set; }
         public bool EmailConfirmed { get; set; }
     }
 }

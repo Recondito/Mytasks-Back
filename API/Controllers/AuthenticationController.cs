@@ -52,7 +52,7 @@ namespace API.Controllers
 
             var tokenString = await GetToken(user);
 
-            return Ok(new UserDto() { Email = user.Email, UserName = user.UserName, Token = tokenString });
+            return Ok(new UserDto() { Email = user.Email, UserName = user.UserName, Token = tokenString, EmailConfirmed = user.EmailConfirmed });
         }
 
         [HttpPost("register")]
@@ -134,6 +134,42 @@ namespace API.Controllers
             if(!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to change password" });
 
             return Ok(new Response() { Status = "Success", Message = "Password was changed successfully" });
+        }
+
+        [Authorize]
+        [HttpPut("changeemail/{newEmail}")]
+        public async Task<ActionResult> ChangeEmail(string newEmail)
+        {
+            var userId = HttpContext.User?.Claims?.FirstOrDefault(c => c.Type == "userid")?.Value;
+
+            if (userId == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
+
+            var user = await userManager.FindByIdAsync(userId);
+
+            if (user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            if(user.EmailConfirmed) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Cannot change email. User email is confirmed" });
+
+            var result = await userManager.SetEmailAsync(user, newEmail);
+
+            if (!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to change email" });            
+                        
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpGet("email")]
+        public async Task<ActionResult<UserEmailDto>> GetUserEmail()
+        {
+            var userId = HttpContext.User?.Claims?.FirstOrDefault(c => c.Type == "userid")?.Value;
+
+            if (userId == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
+
+            var user = await userManager.FindByIdAsync(userId);
+
+            if (user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            return Ok(new UserEmailDto() { Email = user.Email, EmailConfirmed = user.EmailConfirmed });
         }
 
 
