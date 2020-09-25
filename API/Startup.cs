@@ -70,10 +70,14 @@ namespace API
 
             services.AddCors(options =>
             {
-                options.AddPolicy("CorsPolicy", policy =>
-                {
-                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200");
-                });
+                options.AddDefaultPolicy(
+                    builder =>
+                    {
+                        builder.WithOrigins("http://localhost:4200").AllowAnyHeader()
+                                                                    .AllowAnyMethod()
+                                                                    .SetIsOriginAllowed((host) => true)
+                                                                    .AllowCredentials();
+                    });
             });
 
         }
@@ -90,7 +94,7 @@ namespace API
 
             app.UseRouting();
 
-            app.UseCors("CorsPolicy");
+            app.UseCors();
 
             app.UseAuthentication();
             app.UseAuthorization();
