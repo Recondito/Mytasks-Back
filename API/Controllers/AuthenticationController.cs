@@ -184,6 +184,9 @@ namespace API.Controllers
 
             string url = "https://localhost:5001/api/authentication/confirmemail?id=" + user.Id + "&token=" + confirmationToken;
 
+            //Use this when ready in SPA
+            //string url = "https://localhost:4200/confirmemail?id=" + user.Id + "&token=" + confirmationToken;
+
             string emailHtml = $@"
                 <!DOCTYPE html>
                 < html >
@@ -207,6 +210,59 @@ namespace API.Controllers
 
             return Ok();
         }
+
+        [HttpGet("sendpasswordrecovery/{username}")]
+        public async Task<ActionResult> SendPasswordRecovery(string username)
+        {
+            var user = await userManager.FindByNameAsync(username);
+
+            if (user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            if (!user.EmailConfirmed) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User email not confirmed" });
+
+            var token = await userManager.GeneratePasswordResetTokenAsync(user);
+
+            string url = "https://localhost:4200/resetpassword/?id=" + user.Id + "&token=" + token;
+
+            string emailHtml = $@"
+                <!DOCTYPE html>
+                < html >
+                < head >
+                   < meta name = ""viewport"" content = ""width=device-width, initial-scale=1.0"" >
+                   </ head >
+                   < body style = ""text-align: center; font-family: Arial, Helvetica, sans-serif; background-color: gainsboro;"" >
+    
+
+                    < h1 > MyTasks Password Reset</ h1 >
+                    <h2>Hello, {user.UserName}</h2>
+                    < h2 > Click on the link below to reset your account's password.</ h2 >
+                    < br >
+                    < a href = ""{url}"" style = ""text-decoration: none; color: black; background-color: ghostwhite; padding: 1%; border-width: 1px; border-color: black; border-style: solid;"" > Reset Password </ a >
+                    <br>
+                    <p>If you did not request this email please disregard it.</p>
+
+                </ body >
+                </ html > ";
+
+            await sender.SendEmailAsync(user.Email, "MyTasks Password Reset", emailHtml);
+
+            return Ok();
+        }
+
+        [HttpPut("resetpassword")]
+        public async Task<ActionResult> ResetPassword(PasswordResetDto resetDto)
+        {
+            var user = await userManager.FindByIdAsync(resetDto.UserId);
+
+            if (user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            var result = await userManager.ResetPasswordAsync(user,resetDto.Token,resetDto.NewPassword);
+
+            if (!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to reset password" });
+
+            return Ok();
+        }
+
 
         [HttpGet("confirmemail")]
         public async Task<ActionResult> ConfirmEmail([FromQuery] string token, [FromQuery] string id)
