@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using API.EmailService;
 using AutoMapper;
 using Core.Entities;
 using Infrastructure.Data;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -43,6 +45,9 @@ namespace API
             services.AddIdentity<AppUser,IdentityRole>().AddEntityFrameworkStores<AppIdentityContext>().AddDefaultTokenProviders();
 
             services.AddAutoMapper(typeof(MappingProfiles));
+
+            services.AddTransient<IEmailSender, EmailSender>();
+            services.Configure<AuthMessageSenderOptions>(config);
 
             services.AddAuthentication(options =>
             {

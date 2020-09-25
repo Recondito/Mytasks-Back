@@ -12,6 +12,7 @@ using Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -27,15 +28,23 @@ namespace API.Controllers
         private readonly SignInManager<AppUser> signInManager;
         private readonly IConfiguration config;
         private readonly AppIdentityContext appIdentityContext;
+        private readonly IEmailSender sender;
         private readonly SymmetricSecurityKey key;
 
-        public AuthenticationController(UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, SignInManager<AppUser> signInManager, IConfiguration config, AppIdentityContext appIdentityContext)
+        public AuthenticationController(
+            UserManager<AppUser> userManager, 
+            RoleManager<IdentityRole> roleManager, 
+            SignInManager<AppUser> signInManager, 
+            IConfiguration config, 
+            AppIdentityContext appIdentityContext,
+            IEmailSender sender)
         {
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.signInManager = signInManager;
             this.config = config;
             this.appIdentityContext = appIdentityContext;
+            this.sender = sender;
             this.key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JWT:Key"]));
         }
 
@@ -154,6 +163,62 @@ namespace API.Controllers
 
             if (!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to change email" });            
                         
+            return Ok();
+        }
+
+        [Authorize]
+        [HttpPost("sendconfirmationemail")]
+        public async Task<ActionResult> SendConfirmationEmail()
+        {
+            var userId = HttpContext.User?.Claims?.FirstOrDefault(c => c.Type == "userid")?.Value;
+
+            if (userId == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
+
+            var user = await userManager.FindByIdAsync(userId);
+
+            if (user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            if (user.EmailConfirmed) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User email is already confirmed" });
+
+            var confirmationToken = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+            string url = "https://localhost:5001/api/authentication/confirmemail?id=" + user.Id + "&token=" + confirmationToken;
+
+            string emailHtml = $@"
+                <!DOCTYPE html>
+                < html >
+                < head >
+                   < meta name = ""viewport"" content = ""width=device-width, initial-scale=1.0"" >
+                   </ head >
+                   < body style = ""text-align: center; font-family: Arial, Helvetica, sans-serif; background-color: gainsboro;"" >
+    
+
+                    < h1 > Thank you for using MyTasks</ h1 >
+                    <h2>{user.UserName}</h2>
+                    < h2 > Confirm your email address to secure your MyTasks account.</ h2 >
+                    < br >
+                    < a href = ""{url}"" style = ""text-decoration: none; color: black; background-color: ghostwhite; padding: 1%; border-width: 1px; border-color: black; border-style: solid;"" > Confirm Email </ a >
+                 
+
+                </ body >
+                </ html > ";
+
+            await sender.SendEmailAsync(user.Email,"Welcome to MyTasks. Please confirm your email.",emailHtml);
+
+            return Ok();
+        }
+
+        [HttpGet("confirmemail")]
+        public async Task<ActionResult> ConfirmEmail([FromQuery] string token, [FromQuery] string id)
+        {
+            var user = await userManager.FindByIdAsync(id);
+
+            if (user == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "User does not exist" });
+
+            var result = await userManager.ConfirmEmailAsync(user, token);
+
+            if (!result.Succeeded) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to confirm email" });
+
             return Ok();
         }
 
