@@ -35,7 +35,7 @@ namespace API.Controllers
             if (string.IsNullOrEmpty(userId)) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
 
             List<TaskC> tasks = await context.Tasks.Include("TaskTags.Tag").Include(t => t.SubTasks).Where(t => t.UserId == userId).ToListAsync();
-            if(tasks == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to get tasks" });
+            if (tasks == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to get tasks" });
 
             return mapper.Map<List<TaskDtoToReturn>>(tasks);
         }
@@ -65,23 +65,26 @@ namespace API.Controllers
             await context.Tasks.AddAsync(task);
             task.UserId = userId;
 
-            
+
             task.TaskTags = new List<TaskTag>();
-
-            foreach (var tagId in taskDto.TagIds)
+            if (taskDto.TagIds != null)
             {
-                var tag = await context.Tags.FindAsync(tagId);
-                if (tag == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find tag" });
-                if (tag.UserId != userId) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unauthorized tag id" });
-
-                var taskTag = new TaskTag()
+                foreach (var tagId in taskDto.TagIds)
                 {
-                    Tag = tag,
-                    Task = task
-                };
+                    var tag = await context.Tags.FindAsync(tagId);
+                    if (tag == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find tag" });
+                    if (tag.UserId != userId) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unauthorized tag id" });
 
-                task.TaskTags.Add(taskTag);
+                    var taskTag = new TaskTag()
+                    {
+                        Tag = tag,
+                        Task = task
+                    };
+
+                    task.TaskTags.Add(taskTag);
+                }
             }
+            
             if (await context.SaveChangesAsync() == 0) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to create task" });
 
             return mapper.Map<TaskDtoToReturn>(task);
@@ -98,7 +101,7 @@ namespace API.Controllers
             var tag = mapper.Map<Tag>(tagDto);
             await context.Tags.AddAsync(tag);
             tag.UserId = userId;
-            
+
             if (await context.SaveChangesAsync() == 0) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to create tag" });
 
             return mapper.Map<TagDtoToReturn>(tag);
@@ -112,12 +115,12 @@ namespace API.Controllers
             if (string.IsNullOrEmpty(userId)) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
 
             var tag = await context.Tags.FindAsync(tagDto.Id);
-            if(tag == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find tag" });
-            if(tag.UserId != userId) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unathorized tag id" });
+            if (tag == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find tag" });
+            if (tag.UserId != userId) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unathorized tag id" });
 
-            mapper.Map<TagDtoToReturn, Tag>(tagDto,tag);
+            mapper.Map<TagDtoToReturn, Tag>(tagDto, tag);
 
-            if(await context.SaveChangesAsync() == 0) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to update tag" });
+            if (await context.SaveChangesAsync() == 0) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to update tag" });
 
             return mapper.Map<TagDtoToReturn>(tag);
         }
@@ -139,13 +142,13 @@ namespace API.Controllers
             //remove the deleted subtasks
             foreach (var subtask in task.SubTasks)
             {
-                if(taskDto.SubTasks.Find(s => s.Id == subtask.Id) == null)
+                if (taskDto.SubTasks.Find(s => s.Id == subtask.Id) == null)
                 {
                     context.SubTasks.Remove(subtask);
                 }
             }
 
-            
+
             foreach (var subtaskDto in taskDto.SubTasks)
             {
                 var subtask = task.SubTasks.Find(s => s.Id == subtaskDto.Id); //compare subtasks from DTO with subtasks from DB
@@ -169,9 +172,9 @@ namespace API.Controllers
             var tasktagsToDelete = new List<TaskTag>();
             foreach (var taskTag in task.TaskTags)
             {
-                if(taskDto.Tags.Find(t => t.Id == taskTag.TagId) == null)
+                if (taskDto.Tags.Find(t => t.Id == taskTag.TagId) == null)
                 {
-                    tasktagsToDelete.Add(taskTag); 
+                    tasktagsToDelete.Add(taskTag);
                 }
             }
             foreach (var taskTag in tasktagsToDelete)
@@ -196,7 +199,7 @@ namespace API.Controllers
                     };
                     task.TaskTags.Add(taskTag);
                 }
-                
+
 
             }
 
@@ -214,7 +217,7 @@ namespace API.Controllers
             if (string.IsNullOrEmpty(userId)) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Invalid token" });
 
             var task = await context.Tasks.FindAsync(id);
-            if(task == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find task" });
+            if (task == null) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Failed to find task" });
             if (task.UserId != userId) return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "Error", Message = "Unathorized task id" });
 
             context.Tasks.Remove(task);
